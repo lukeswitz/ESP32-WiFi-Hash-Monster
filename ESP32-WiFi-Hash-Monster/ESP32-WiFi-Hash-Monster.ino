@@ -107,6 +107,9 @@ uint32_t lastDrawTime = 0;
 uint32_t lastButtonTime = millis();
 uint32_t lastAutoSwitchChTime = 0;
 
+// Define target networks
+String targetSSIDs[] = {"Network1", "Network2", "Network3"};
+
 int autoChannels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}; // customize this
 int AUTO_CH_COUNT = sizeof(autoChannels) / sizeof(int);
 int autoChIndex = 0;
@@ -809,9 +812,26 @@ void wifi_promiscuous(void* buf, wifi_promiscuous_pkt_type_t type)
   */
 
   if ((frameSubType == SUBTYPE_BEACONS) && (version == 0) ) {
-    uint8_t SSID_length = pkt->payload[37];
+  uint8_t SSID_length = pkt->payload[37];
+  
     if (SSID_length>32) return;
+    String ssid = "";
+  
+    for (int i = 0; i < SSID_length; i++) {
+      ssid += (char)pkt->payload[38+i];
+    }
+  
+    bool isTarget = false;
 
+    for(String targetSSID : targetSSIDs) {
+      if(ssid == targetSSID) {
+        isTarget = true;
+        break;
+    }
+  }
+    
+		if(!isTarget) return;  // Skip this network if it's not a target
+		
     bool ascii_error = false;
     for (u =0; u<SSID_length;u++) {
       if (!isprint(pkt->payload[38+u])) {
